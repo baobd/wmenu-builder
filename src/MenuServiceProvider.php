@@ -2,6 +2,7 @@
 
 namespace Harimayco\Menu;
 
+use Harimayco\Menu\View\MenuComponent;
 use Illuminate\Support\ServiceProvider;
 
 class MenuServiceProvider extends ServiceProvider
@@ -16,6 +17,8 @@ class MenuServiceProvider extends ServiceProvider
         $this->loadRoutesFrom(__DIR__ . '/routes.php');
 
         $this->loadViewsFrom(__DIR__ . '/Views', 'wmenu');
+        $this->loadTranslationsFrom(__DIR__ . '/../lang', 'wmenu');
+        $this->loadViewComponentsAs('wmenu', ['menu' => MenuComponent::class]);
 
         $this->publishes([
             __DIR__ . '/../config/menu.php'  => config_path('menu.php'),
@@ -30,9 +33,14 @@ class MenuServiceProvider extends ServiceProvider
         ], 'public');
 
         $this->publishes([
+            __DIR__ . '/../lang' => function_exists('lang_path') ? lang_path('vendor/wmenu') : resource_path('lang/vendor/wmenu'),
+        ], 'lang');
+
+        $this->publishes([
             __DIR__ . '/../migrations/2017_08_11_073824_create_menus_wp_table.php' => database_path('migrations/2017_08_11_073824_create_menus_wp_table.php'),
             __DIR__ . '/../migrations/2017_08_11_074006_create_menu_items_wp_table.php' => database_path('migrations/2017_08_11_074006_create_menu_items_wp_table.php'),
             __DIR__ . '/../migrations/2019_01_05_000000_add_role_id_to_menu_items_table.php' => database_path('migrations/2019_01_05_000000_add_role_id_to_menu_items_table.php'),
+            __DIR__ . '/../migrations/2026_10_24_000000_add_target_to_menu_items_table.php' => database_path('migrations/2026_10_24_000000_add_target_to_menu_items_table.php'),
         ], 'migrations');
     }
 

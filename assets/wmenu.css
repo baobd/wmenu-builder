@@ -1,0 +1,370 @@
+/* Menu builder. Everything is scoped to .wmenu; override the variables to match your admin theme. */
+.wmenu {
+  --wmenu-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --wmenu-text: #1f2328;
+  --wmenu-muted: #656d76;
+  --wmenu-bg: #ffffff;
+  --wmenu-surface: #f6f8fa;
+  --wmenu-border: #d0d7de;
+  --wmenu-accent: #0969da;
+  --wmenu-accent-text: #ffffff;
+  --wmenu-danger: #cf222e;
+  --wmenu-radius: 6px;
+  --wmenu-indent: 28px;
+
+  font-family: var(--wmenu-font);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--wmenu-text);
+  box-sizing: border-box;
+}
+
+.wmenu *,
+.wmenu *::before,
+.wmenu *::after {
+  box-sizing: inherit;
+}
+
+.wmenu h3 {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.wmenu-muted {
+  margin: 0 0 12px;
+  color: var(--wmenu-muted);
+}
+
+.wmenu [hidden] {
+  display: none !important;
+}
+
+/* top bar */
+.wmenu-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-bottom: 16px;
+}
+
+.wmenu-select {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.wmenu-link {
+  color: var(--wmenu-accent);
+}
+
+/* panels */
+.wmenu-columns {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 760px) {
+  .wmenu-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.wmenu-panel {
+  background: var(--wmenu-bg);
+  border: 1px solid var(--wmenu-border);
+  border-radius: var(--wmenu-radius);
+  padding: 16px;
+  min-width: 0;
+}
+
+.wmenu-create {
+  max-width: 420px;
+}
+
+.wmenu-structure-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--wmenu-border);
+}
+
+.wmenu-name {
+  flex: 1 1 220px;
+  margin-bottom: 0;
+}
+
+.wmenu-status {
+  color: var(--wmenu-muted);
+  font-size: 13px;
+  padding-bottom: 7px;
+}
+
+.wmenu-structure-foot {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--wmenu-border);
+}
+
+/* form controls */
+.wmenu-field {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.wmenu-field > span {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.wmenu input[type="text"],
+.wmenu select {
+  width: 100%;
+  min-height: 34px;
+  padding: 5px 8px;
+  font: inherit;
+  color: var(--wmenu-text);
+  background: var(--wmenu-bg);
+  border: 1px solid var(--wmenu-border);
+  border-radius: var(--wmenu-radius);
+}
+
+.wmenu-select select {
+  width: auto;
+  min-width: 160px;
+}
+
+.wmenu [aria-invalid="true"] {
+  border-color: var(--wmenu-danger);
+  box-shadow: 0 0 0 1px var(--wmenu-danger);
+}
+
+.wmenu input:focus-visible,
+.wmenu select:focus-visible,
+.wmenu button:focus-visible,
+.wmenu a:focus-visible {
+  outline: 2px solid var(--wmenu-accent);
+  outline-offset: 1px;
+}
+
+.wmenu-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 5px 12px;
+  font: inherit;
+  font-weight: 500;
+  color: var(--wmenu-text);
+  background: var(--wmenu-surface);
+  border: 1px solid var(--wmenu-border);
+  border-radius: var(--wmenu-radius);
+  cursor: pointer;
+}
+
+.wmenu-btn:hover {
+  border-color: var(--wmenu-muted);
+}
+
+.wmenu-btn:disabled {
+  opacity: .6;
+  cursor: progress;
+}
+
+.wmenu-btn-primary {
+  color: var(--wmenu-accent-text);
+  background: var(--wmenu-accent);
+  border-color: var(--wmenu-accent);
+}
+
+.wmenu-btn-primary:hover {
+  border-color: var(--wmenu-text);
+}
+
+.wmenu-btn-danger {
+  color: var(--wmenu-danger);
+  background: transparent;
+  border-color: transparent;
+}
+
+.wmenu-btn-danger:hover {
+  border-color: var(--wmenu-danger);
+}
+
+.wmenu-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--wmenu-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--wmenu-radius);
+  cursor: pointer;
+}
+
+.wmenu-icon-btn:hover {
+  color: var(--wmenu-text);
+  border-color: var(--wmenu-border);
+}
+
+.wmenu-icon {
+  flex: none;
+}
+
+/* tree */
+.wmenu-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.wmenu-item .wmenu-list {
+  margin-inline-start: var(--wmenu-indent);
+  min-height: 4px;
+}
+
+/* while dragging, show where an item can be dropped as a sub item */
+.wmenu-dragging {
+  user-select: none;
+}
+
+.wmenu-dragging .wmenu-item .wmenu-list {
+  min-height: 16px;
+  border-inline-start: 2px dashed var(--wmenu-border);
+}
+
+.wmenu-item {
+  margin: 0 0 6px;
+}
+
+.wmenu-item-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding-block: 4px;
+  padding-inline: 0 4px;
+  background: var(--wmenu-surface);
+  border: 1px solid var(--wmenu-border);
+  border-radius: var(--wmenu-radius);
+}
+
+.wmenu-item-open > .wmenu-item-bar {
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+}
+
+.wmenu-handle {
+  display: inline-flex;
+  align-items: center;
+  align-self: stretch;
+  padding-inline: 10px 6px;
+  color: var(--wmenu-muted);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.wmenu-item-text {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  min-width: 0;
+}
+
+.wmenu-item-title {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.wmenu-item-link {
+  color: var(--wmenu-muted);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.wmenu-toggle .wmenu-icon {
+  transition: transform .15s;
+}
+
+.wmenu-item-open > .wmenu-item-bar .wmenu-toggle .wmenu-icon {
+  transform: rotate(180deg);
+}
+
+.wmenu-item-settings {
+  padding: 12px;
+  margin-bottom: 6px;
+  background: var(--wmenu-bg);
+  border: 1px solid var(--wmenu-border);
+  border-top: 0;
+  border-radius: 0 0 var(--wmenu-radius) var(--wmenu-radius);
+}
+
+.wmenu-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0 12px;
+}
+
+.wmenu-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.wmenu-moves {
+  display: inline-flex;
+  margin-inline-end: auto;
+}
+
+.sortable-fallback {
+  opacity: .9;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .15);
+}
+
+.sortable-ghost > .wmenu-item-bar {
+  opacity: .4;
+  border-style: dashed;
+}
+
+/* notifications */
+.wmenu-toasts {
+  position: fixed;
+  inset-inline-end: 16px;
+  bottom: 16px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: calc(100vw - 32px);
+}
+
+.wmenu-toast {
+  padding: 10px 14px;
+  color: var(--wmenu-accent-text);
+  background: var(--wmenu-text);
+  border-radius: var(--wmenu-radius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .15);
+  white-space: pre-line;
+}
+
+.wmenu-toast-error {
+  background: var(--wmenu-danger);
+}

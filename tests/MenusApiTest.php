@@ -4,6 +4,7 @@ namespace Harimayco\Menu\Tests;
 
 use Harimayco\Menu\Models\MenuItems;
 use Harimayco\Menu\Models\Menus;
+use Illuminate\Support\Facades\Schema;
 
 class MenusApiTest extends TestCase
 {
@@ -127,5 +128,47 @@ class MenusApiTest extends TestCase
         $id = $this->postAs("menus/{$menu->id}/items", ['label' => 'A', 'role_id' => 3])->json('data.id');
 
         $this->assertSame(0, (int) MenuItems::find($id)->role_id);
+    }
+
+    public function test_target()
+    {
+        $menu = Menus::create(['name' => 'Main']);
+
+        $id = $this->postAs("menus/{$menu->id}/items", ['label' => 'A', 'target' => '_blank'])->assertStatus(201)->json('data.id');
+        $this->assertSame('_blank', MenuItems::find($id)->target);
+
+        $this->postAs("menus/{$menu->id}/items", ['label' => 'B', 'target' => '_top'])->assertStatus(422)->assertJsonValidationErrors('target');
+
+        $this->putAs("menus/{$menu->id}", ['name' => 'Main', 'items' => [
+            ['id' => $id, 'parent' => 0, 'sort' => 0, 'label' => 'A', 'target' => '_self'],
+        ]])->assertOk();
+        $this->assertNull(MenuItems::find($id)->target);
+    }
+
+    public function test_saves_without_the_target_column()
+    {
+        // apps that upgraded without running the target migration yet
+        Schema::table((new MenuItems())->getTable(), function ($table) {
+            $table->dropColumn('target');
+        });
+        $menu = Menus::create(['name' => 'Main']);
+
+        $id = $this->postAs("menus/{$menu->id}/items", ['label' => 'A', 'target' => '_blank'])->assertStatus(201)->json('data.id');
+        $this->putAs("menus/{$menu->id}", ['name' => 'Main', 'items' => [
+            ['id' => $id, 'parent' => 0, 'sort' => 0, 'label' => 'A2', 'target' => '_blank'],
+        ]])->assertOk();
+
+        $this->assertSame('A2', MenuItems::find($id)->label);
+    }
+
+    public function test_messages_are_translated()
+    {
+        $this->app->setLocale('vi');
+        $menu = Menus::create(['name' => 'Main']);
+        MenuItems::create(['label' => 'A', 'link' => '/', 'menu' => $menu->id]);
+
+        $this->postAs("menus/{$menu->id}/items", ['label' => 'L', 'link' => 'javascript:x'])
+            ->assertStatus(422)->assertJsonFragment(['link' => ['URL phải là đường dẫn tương đối hoặc dùng một trong các giao thức: http, https, mailto, tel.']]);
+        $this->deleteAs("menus/{$menu->id}")->assertStatus(409)->assertJson(['message' => 'Bạn phải xoá hết các mục trước.']);
     }
 }

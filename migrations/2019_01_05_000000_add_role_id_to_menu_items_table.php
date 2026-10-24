@@ -32,7 +32,13 @@ class AddRoleIdToMenuItemsTable extends Migration
      */
     public function down()
     {
-        Schema::table(config('menu.table_prefix') . config('menu.table_name_items'), function (Blueprint $table) {
+        $table = config('menu.table_prefix') . config('menu.table_name_items');
+
+        if (!Schema::hasColumn($table, 'role_id')) {
+            return;
+        }
+
+        Schema::table($table, function (Blueprint $table) {
             $table->dropColumn('role_id');
         });
     }

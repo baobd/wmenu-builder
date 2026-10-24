@@ -9,33 +9,32 @@ use Illuminate\Support\Facades\DB;
 class WMenu
 {
 
+    /**
+     * The menu builder: the menu chosen with ?menu=ID, or the form to create one.
+     */
     public function render()
     {
-        $menu = new Menus();
-        $menuitems = new MenuItems();
-        $menulist = $menu->select(['id', 'name'])->get();
-        $menulist = $menulist->pluck('name', 'id')->prepend('Select menu', 0)->all();
+        $menulist = Menus::orderBy('name')->pluck('name', 'id')->all();
+        $menu = request()->filled('menu') ? Menus::with('items')->find(request()->input('menu')) : null;
 
-        //$roles = Role::all();
-
-        if ((request()->has("action") && empty(request()->input("menu"))) || request()->input("menu") == '0') {
-            return view('wmenu::menu-html')->with("menulist" , $menulist);
-        } else {
-
-            $menu = Menus::find(request()->input("menu"));
-            $menus = $menuitems->getall(request()->input("menu"));
-
-            $data = ['menus' => $menus, 'indmenu' => $menu, 'menulist' => $menulist];
-            if( config('menu.use_roles')) {
-                $data['roles'] = DB::table(config('menu.roles_table'))->select([config('menu.roles_pk'),config('menu.roles_title_field')])->get();
-                $data['role_pk'] = config('menu.roles_pk');
-                $data['role_title_field'] = config('menu.roles_title_field');
-            }
-            return view('wmenu::menu-html', $data);
+        $data = [
+            'menulist' => $menulist,
+            'menu' => $menu,
+            'currentUrl' => url()->current(),
+            'roles' => [],
+            'role_pk' => config('menu.roles_pk'),
+            'role_title_field' => config('menu.roles_title_field'),
+        ];
+        if (config('menu.use_roles')) {
+            $data['roles'] = DB::table(config('menu.roles_table'))->select([config('menu.roles_pk'), config('menu.roles_title_field')])->get();
         }
 
+        return view('wmenu::menu-html', $data);
     }
 
+    /**
+     * The builder scripts, to output after render(). They do not need jQuery.
+     */
     public function scripts()
     {
         return view('wmenu::scripts');

@@ -50,7 +50,7 @@ class MenuController extends Controller
         ]);
 
         if (!$this->menus->deleteMenu(Menus::findOrFail($request->input('id')))) {
-            return response()->json(['resp' => 'You have to delete all items first', 'error' => 1]);
+            return response()->json(['resp' => trans('wmenu::messages.menu_not_empty'), 'error' => 1]);
         }
 
         return response()->json(['resp' => 'you delete this item']);

@@ -2,7 +2,7 @@
 [![Latest Stable Version](https://poser.pugx.org/harimayco/laravel-menu/v/stable)](https://packagist.org/packages/harimayco/laravel-menu) [![Latest Unstable Version](https://poser.pugx.org/harimayco/laravel-menu/v/unstable)](https://packagist.org/packages/harimayco/laravel-menu) [![Total Downloads](https://poser.pugx.org/harimayco/laravel-menu/downloads)](https://packagist.org/packages/harimayco/laravel-menu) [![Monthly Downloads](https://poser.pugx.org/harimayco/laravel-menu/d/monthly)](https://packagist.org/packages/harimayco/laravel-menu)
 
 forked from https://github.com/lordmacu/wmenu
-![Laravel drag and drop menu](https://raw.githubusercontent.com/harimayco/wmenu-builder/master/screenshot.png)
+![Laravel drag and drop menu builder](screenshot.png)
 
 ### Installation
 
@@ -59,11 +59,13 @@ On your view blade file
     {!! Menu::render() !!}
 @endsection
 
-//YOU MUST HAVE JQUERY LOADED BEFORE menu scripts
 @push('scripts')
     {!! Menu::scripts() !!}
 @endpush
 ```
+
+The builder does not need jQuery: it ships its own script (with [SortableJS](https://github.com/SortableJS/Sortable)) and stylesheet,
+published with the `public` tag. Items can be ordered and nested by drag and drop, or with the move buttons of each item (keyboard friendly).
 
 ### Using The Model
 
@@ -109,34 +111,46 @@ $public_menu = Menu::getByName('Public'); //return array
 
 ### Menu Usage Example (b)
 
-Now inside your blade template file place the menu using this simple example
+The easiest way to show a menu is the Blade component:
 
-```php
-<div class="nav-wrap">
-    <div class="btn-menu">
-        <span></span>
-    </div><!-- //mobile menu button -->
-    <nav id="mainnav" class="mainnav">
+```blade
+<nav class="mainnav">
+    <x-wmenu-menu name="Public" class="menu" />
+</nav>
+```
 
-        @if($public_menu)
-        <ul class="menu">
-            @foreach($public_menu as $menu)
-            <li class="">
-                <a href="{{ $menu['link'] }}" title="">{{ $menu['label'] }}</a>
-                @if( $menu['child'] )
-                <ul class="sub-menu">
-                    @foreach( $menu['child'] as $child )
-                        <li class=""><a href="{{ $child['link'] }}" title="">{{ $child['label'] }}</a></li>
-                    @endforeach
-                </ul><!-- /.sub-menu -->
-                @endif
-            </li>
+It renders nested `<ul>` lists (sub lists get the `sub-menu` class), adds the item CSS class, `target="_blank" rel="noopener noreferrer"`
+for items opening in a new tab, and the `active` class on the item of the current page and its parents. Options:
+
+| Attribute | Default | |
+|---|---|---|
+| `name` / `:id` | | the menu, by name or id |
+| `active-class` | `active` | class of the current item and its parents |
+| `submenu-class` | `sub-menu` | class of the nested lists |
+| `:role` | | with `use_roles`, only show the items of this role and the ones for everyone |
+
+Any other attribute (`class`, `id`, ...) goes on the outer `<ul>`. To change the markup, publish the views and edit
+`resources/views/vendor/wmenu/components/menu-items.blade.php`.
+
+Or build the markup yourself from the helper array:
+
+```blade
+@if($public_menu)
+<ul class="menu">
+    @foreach($public_menu as $menu)
+    <li>
+        <a href="{{ $menu['link'] }}" @if(($menu['target'] ?? null) === '_blank') target="_blank" rel="noopener noreferrer" @endif>{{ $menu['label'] }}</a>
+        @if($menu['child'])
+        <ul class="sub-menu">
+            @foreach($menu['child'] as $child)
+            <li><a href="{{ $child['link'] }}">{{ $child['label'] }}</a></li>
             @endforeach
+        </ul>
         @endif
-
-        </ul><!-- /.menu -->
-    </nav><!-- /#mainnav -->
- </div><!-- /.nav-wrap -->
+    </li>
+    @endforeach
+</ul>
+@endif
 ```
 
 ### HELPERS
@@ -205,10 +219,10 @@ and `422` with the validation errors on invalid input.
 | Method | URI | Route name | Body |
 |---|---|---|---|
 | POST | `menus` | `wmenu.menus.store` | `name` |
-| PUT | `menus/{menu}` | `wmenu.menus.update` | `name`, `items[]` (`id`, `parent`, `sort`, and optionally `label`, `link`, `class`, `role_id`) |
+| PUT | `menus/{menu}` | `wmenu.menus.update` | `name`, `items[]` (`id`, `parent`, `sort`, and optionally `label`, `link`, `class`, `target`, `role_id`) |
 | DELETE | `menus/{menu}` | `wmenu.menus.destroy` | `409` while the menu has items |
-| POST | `menus/{menu}/items` | `wmenu.items.store` | `label`, `link`, `class`, `role_id` |
-| PUT | `menus/{menu}/items/{item}` | `wmenu.items.update` | `label`, `link`, `class`, `role_id` |
+| POST | `menus/{menu}/items` | `wmenu.items.store` | `label`, `link`, `class`, `target` (`_blank` or empty), `role_id` |
+| PUT | `menus/{menu}/items/{item}` | `wmenu.items.update` | `label`, `link`, `class`, `target` (`_blank` or empty), `role_id` |
 | DELETE | `menus/{menu}/items/{item}` | `wmenu.items.destroy` | sub items move one level up |
 
 Links must be relative (`/about`, `#top`) or use `http`, `https`, `mailto` or `tel`. Item depths are computed from the parents.
@@ -216,7 +230,15 @@ The old `h*` routes (`hcreatenewmenu`, `hgeneratemenucontrol`, ...) still work f
 
 ### Customization
 
-you can edit the menu interface in **_resources/views/vendor/wmenu/menu-html.blade.php_**
+- **Look:** the builder styles are scoped to `.wmenu` and use CSS variables, override them in your admin stylesheet:
+
+  ```css
+  .wmenu { --wmenu-accent: #7c3aed; --wmenu-radius: 4px; --wmenu-font: inherit; }
+  ```
+
+- **Markup:** publish the views (`--tag=view`) and edit `resources/views/vendor/wmenu/`.
+- **Texts:** the builder is translated in English and Vietnamese (`vi`), following `app()->getLocale()`.
+  Publish the translations (`--tag=lang`) to change them or add a language in `lang/vendor/wmenu/{locale}/`.
 
 ### Development
 
@@ -244,13 +266,17 @@ vendor/bin/phpstan analyse
 ### Upgrading from 1.x
 
 - The default `middleware` in `config/menu.php` is now `['web', 'auth']`. If you published the config before, check that your `middleware` setting contains `web` and an authentication middleware: the old default `[]` left the builder routes open to everyone.
-- Re-publish the assets so the builder uses the new save request and error messages: `php artisan vendor:publish --provider="Harimayco\Menu\MenuServiceProvider" --tag=public --force`
+- The builder has a new interface without jQuery or the WordPress scripts. Re-publish the assets, and the views if you published them before:
+  `php artisan vendor:publish --provider="Harimayco\Menu\MenuServiceProvider" --tag=public --force` (and `--tag=view --force`).
+  The old files in `public/vendor/harimayco-menu` (`scripts.js`, `scripts2.js`, `menu.js`, `style.css`, `images/`) can be deleted.
+- New `target` column (open in a new tab): publish the migrations and run `php artisan migrate`. Until then the builder keeps working without it.
 - The role migration was previously published to `database/` instead of `database/migrations/` (and with an invalid timestamp). If you use roles and never ran it, publish the migrations again and run `php artisan migrate`; you can delete the old `database/2019_01_05_293551_add-role-id-to-menu-items-table.php` file.
 - Menu item links are validated: they must be relative (`/about`, `#top`) or use `http`, `https`, `mailto` or `tel`. Links such as `javascript:` are rejected.
 - Deleting an item moves its sub items one level up (as the builder UI shows) instead of leaving them pointing to a missing parent.
-- The builder scripts use the new `wmenu.*` JSON routes; re-publish the assets (see above). The old routes are deprecated.
+- The builder scripts use the new `wmenu.*` JSON routes. The old routes are deprecated.
+- `Menu::render()` passes `$menu` (with its nested `items`) to the view instead of `$menus`/`$indmenu`.
 - `$menu->items` now eager loads every level of sub items (`child` is recursive), not only the first one.
 - The controller no longer extends `App\Http\Controllers\Controller`.
 
 ### KNOWN ISSUES
-- Not working with RTL websites [#21](https://github.com/harimayco/wmenu-builder/issues/21) (pull requests are welcome)
+- None known. The builder now supports RTL pages ([#21](https://github.com/harimayco/wmenu-builder/issues/21)).

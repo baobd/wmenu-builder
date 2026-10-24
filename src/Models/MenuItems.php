@@ -14,13 +14,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $parent
  * @property int $sort
  * @property string|null $class
+ * @property string|null $target
  * @property int $menu
  * @property int $depth
  * @property int $role_id
  */
 class MenuItems extends Model
 {
-    protected $fillable = ['label', 'link', 'parent', 'sort', 'class', 'menu', 'depth', 'role_id'];
+    protected $fillable = ['label', 'link', 'parent', 'sort', 'class', 'target', 'menu', 'depth', 'role_id'];
 
     protected static function booted()
     {

@@ -5,6 +5,7 @@ namespace Harimayco\Menu;
 use Harimayco\Menu\Models\MenuItems;
 use Harimayco\Menu\Models\Menus;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -12,6 +13,8 @@ use Illuminate\Validation\ValidationException;
  */
 class MenuManager
 {
+    protected $hasTarget;
+
     public function createMenu($name)
     {
         $menu = new Menus();
@@ -39,7 +42,7 @@ class MenuManager
      * Saves the menu name and, for each given item, its position (parent, sort) and,
      * when a label is given, its content. Depths are computed from the parents.
      *
-     * @param array $items list of ['id', 'parent', 'sort', 'label'?, 'link'?, 'class'?, 'role_id'?]
+     * @param array $items list of ['id', 'parent', 'sort', 'label'?, 'link'?, 'class'?, 'target'?, 'role_id'?]
      */
     public function saveMenu(Menus $menu, $name, array $items, $field = 'items')
     {
@@ -54,14 +57,14 @@ class MenuManager
         foreach ($items as $index => $value) {
             if ($value['parent'] != 0 && !isset($existing[$value['parent']])) {
                 throw ValidationException::withMessages([
-                    "$field.$index.parent" => 'The parent must be another item of this menu.',
+                    "$field.$index.parent" => trans('wmenu::messages.parent_not_in_menu'),
                 ]);
             }
 
             $depth = $this->depthOf($value['id'], $parents);
             if ($depth === null) {
                 throw ValidationException::withMessages([
-                    "$field.$index.parent" => 'An item cannot be placed under itself.',
+                    "$field.$index.parent" => trans('wmenu::messages.parent_loop'),
                 ]);
             }
             $depths[$value['id']] = $depth;
@@ -131,7 +134,7 @@ class MenuManager
         foreach ($items as $index => $value) {
             if (!isset($existing[$value['id']])) {
                 throw ValidationException::withMessages([
-                    "$field.$index.id" => 'The item does not belong to this menu.',
+                    "$field.$index.id" => trans('wmenu::messages.item_not_in_menu'),
                 ]);
             }
         }
@@ -158,11 +161,26 @@ class MenuManager
         return $depth;
     }
 
+    /**
+     * The target column comes with a later migration, apps that have not run it yet can still save.
+     */
+    protected function hasTargetColumn()
+    {
+        if ($this->hasTarget === null) {
+            $this->hasTarget = Schema::hasColumn((new MenuItems())->getTable(), 'target');
+        }
+
+        return $this->hasTarget;
+    }
+
     protected function fill(MenuItems $item, array $value)
     {
         $item->label = $value['label'];
         $item->link = $value['link'] ?? '';
         $item->class = $value['class'] ?? null;
+        if (array_key_exists('target', $value) && $this->hasTargetColumn()) {
+            $item->target = $value['target'] === '_blank' ? '_blank' : null;
+        }
         if (config('menu.use_roles')) {
             $item->role_id = $value['role_id'] ?? 0;
         }

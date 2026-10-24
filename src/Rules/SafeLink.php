@@ -31,6 +31,6 @@ class SafeLink implements Rule
 
     public function message()
     {
-        return 'The :attribute must be a relative path or use one of: ' . implode(', ', $this->schemes) . '.';
+        return trans('wmenu::messages.unsafe_link', ['schemes' => implode(', ', $this->schemes)]);
     }
 }

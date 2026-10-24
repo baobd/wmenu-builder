@@ -37,7 +37,7 @@ class MenusController extends Controller
     public function destroy($menu)
     {
         if (!$this->menus->deleteMenu(Menus::findOrFail($menu))) {
-            return response()->json(['message' => 'You have to delete all items first'], 409);
+            return response()->json(['message' => trans('wmenu::messages.menu_not_empty')], 409);
         }
 
         return response()->json(null, 204);
