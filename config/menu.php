@@ -1,9 +1,11 @@
 <?php
 
 return [
-/* you can add your own middleware here */
-	
-   'middleware' => [],
+/* middleware applied to the menu builder routes.
+   keep "web" (session + CSRF) and an authentication middleware here,
+   otherwise anyone can create, edit and delete your menus */
+
+   'middleware' => ['web', 'auth'],
 
 /* you can set your own table prefix here */
     'table_prefix' => 'admin_',

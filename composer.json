@@ -1,6 +1,6 @@
 {
     "name": "harimayco/laravel-menu",
-    "description": "drag and drop menu generator like wordpress for laravel 5",
+    "description": "drag and drop menu generator like wordpress for laravel",
     "keywords": ["Laravel", "Menu", "Wordpress", "Builder"],
     "authors": [
     	{
@@ -15,8 +15,11 @@
         }
     ],
     "require": {
-        "php": ">=7.2",
-        "illuminate/support": "5.* || 6.* || 7.* || 8.*"
+        "php": "^8.0",
+        "illuminate/support": "^8.0 || ^9.0 || ^10.0 || ^11.0 || ^12.0",
+        "illuminate/database": "^8.0 || ^9.0 || ^10.0 || ^11.0 || ^12.0",
+        "illuminate/http": "^8.0 || ^9.0 || ^10.0 || ^11.0 || ^12.0",
+        "illuminate/routing": "^8.0 || ^9.0 || ^10.0 || ^11.0 || ^12.0"
     },
     "autoload": {
         "psr-4": {
@@ -33,6 +36,6 @@
             }
         }
     },
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "prefer-stable": true
 }

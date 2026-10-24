@@ -2,7 +2,6 @@
 
 namespace Harimayco\Menu;
 
-use App\Http\Requests;
 use Harimayco\Menu\Models\Menus;
 use Harimayco\Menu\Models\MenuItems;
 use Illuminate\Support\Facades\DB;
@@ -44,14 +43,14 @@ class WMenu
 
     public function select($name = "menu", $menulist = array())
     {
-        $html = '<select name="' . $name . '">';
+        $html = '<select name="' . e($name) . '">';
 
         foreach ($menulist as $key => $val) {
             $active = '';
             if (request()->input('menu') == $key) {
                 $active = 'selected="selected"';
             }
-            $html .= '<option ' . $active . ' value="' . $key . '">' . $val . '</option>';
+            $html .= '<option ' . $active . ' value="' . e($key) . '">' . e($val) . '</option>';
         }
         $html .= '</select>';
         return $html;

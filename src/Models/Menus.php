@@ -6,12 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Menus extends Model
 {
-    protected $table = 'menus';
+    protected $fillable = ['name'];
 
-    public function __construct(array $attributes = [])
+    public function getTable()
     {
-        //parent::construct( $attributes );
-        $this->table = config('menu.table_prefix') . config('menu.table_name_menus');
+        return config('menu.table_prefix') . config('menu.table_name_menus');
     }
 
     public static function byName($name)

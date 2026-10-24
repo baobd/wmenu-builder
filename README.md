@@ -12,7 +12,7 @@ forked from https://github.com/lordmacu/wmenu
 composer require harimayco/laravel-menu
 ```
 
-**_Step 2 & 3 are optional if you are using laravel 5.5_**
+**_Step 2 & 3 are optional, Laravel discovers the package automatically_**
 
 2. Add the following class, to "providers" array in the file config/app.php (optional on laravel 5.5)
 
@@ -34,7 +34,7 @@ php artisan vendor:publish --provider="Harimayco\Menu\MenuServiceProvider"
 
 5. Configure (optional) in **_config/menu.php_** :
 
-- **_CUSTOM MIDDLEWARE:_** You can add you own middleware
+- **_CUSTOM MIDDLEWARE:_** The builder routes use `['web', 'auth']` by default. Keep `web` (session + CSRF protection) and an authentication/authorization middleware (e.g. `['web', 'auth', 'can:manage-menus']`), otherwise anyone can edit your menus
 - **_TABLE PREFIX:_** By default this package will create 2 new tables named "menus" and "menu_items" but you can still add your own table prefix avoiding conflict with existing table
 - **_TABLE NAMES_** If you want use specific name of tables you have to modify that and the migrations
 - **_Custom routes_** If you want to edit the route path you can edit the field
@@ -177,7 +177,17 @@ you can edit the menu interface in **_resources/views/vendor/wmenu/menu-html.bla
 
 ### Compatibility
 
-- Tested with laravel 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 6.x, 7.x
+- PHP 8.0+, Laravel 8.x, 9.x, 10.x, 11.x, 12.x
+- For Laravel 5.x – 7.x use an older release of this package
+
+### Upgrading from 1.x
+
+- The default `middleware` in `config/menu.php` is now `['web', 'auth']`. If you published the config before, check that your `middleware` setting contains `web` and an authentication middleware: the old default `[]` left the builder routes open to everyone.
+- Re-publish the assets so the builder uses the new save request and error messages: `php artisan vendor:publish --provider="Harimayco\Menu\MenuServiceProvider" --tag=public --force`
+- The role migration was previously published to `database/` instead of `database/migrations/` (and with an invalid timestamp). If you use roles and never ran it, publish the migrations again and run `php artisan migrate`; you can delete the old `database/2019_01_05_293551_add-role-id-to-menu-items-table.php` file.
+- Menu item links are validated: they must be relative (`/about`, `#top`) or use `http`, `https`, `mailto` or `tel`. Links such as `javascript:` are rejected.
+- Deleting an item moves its sub items one level up (as the builder UI shows) instead of leaving them pointing to a missing parent.
+- The controller no longer extends `App\Http\Controllers\Controller`.
 
 ### KNOWN ISSUES
 - Not working with RTL websites [#21](https://github.com/harimayco/wmenu-builder/issues/21) (pull requests are welcome)

@@ -1928,7 +1928,8 @@ if (r == true) {
    var d = parseInt(c.id.replace("delete-", ""), 10);
                deleteitem(d);
 
-            return b.removeMenuItem(a("#menu-item-" + d)), b.registerChange(), !1
+            // the server moves the sub items up itself, saving here would race with the delete request
+            return b.removeMenuItem(a("#menu-item-" + d)), !1
             
 }else{
 	return false;

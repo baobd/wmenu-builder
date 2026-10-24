@@ -26,16 +26,33 @@ function getmenus() {
     ) {
       padre = textoexplotado[textoexplotado.length - 2];
     }
+    var settings = $(this).find('.menu-item-settings');
     arraydata.push({
       depth: dept,
       id: id[2],
       parent: padre,
-      sort: cont
+      sort: cont,
+      label: settings.find('.edit-menu-item-title').val(),
+      link: settings.find('.edit-menu-item-url').val(),
+      class: settings.find('.edit-menu-item-classes').val(),
+      role_id: settings.find('.edit-menu-item-role').val()
     });
     cont++;
   });
-  updateitem();
+  // structure and item content are saved together in one request
   actualizarmenu();
+}
+
+function showerror(xhr) {
+  var message = 'Something went wrong, please try again.';
+  if (xhr.responseJSON && xhr.responseJSON.errors) {
+    message = $.map(xhr.responseJSON.errors, function(messages) {
+      return messages.join('\n');
+    }).join('\n');
+  } else if (xhr.responseJSON && xhr.responseJSON.message) {
+    message = xhr.responseJSON.message;
+  }
+  alert(message);
 }
 
 function addcustommenu() {
@@ -54,6 +71,7 @@ function addcustommenu() {
     success: function(response) {
       window.location.reload();
     },
+    error: showerror,
     complete: function() {
       $('#spincustomu').hide();
     }
@@ -104,7 +122,7 @@ function updateitem(id = 0) {
       });
     });
 
-    var data = { arraydata: arr_data };
+    var data = { arraydata: arr_data, idmenu: $('#idmenu').val() };
   }
   $.ajax({
     data: data,
@@ -116,6 +134,7 @@ function updateitem(id = 0) {
       }
     },
     success: function(response) {},
+    error: showerror,
     complete: function() {
       if (id) {
         $('#spincustomu2').hide();
@@ -138,9 +157,7 @@ function actualizarmenu() {
     beforeSend: function(xhr) {
       $('#spincustomu2').show();
     },
-    success: function(response) {
-      console.log('aqu llega');
-    },
+    error: showerror,
     complete: function() {
       $('#spincustomu2').hide();
     }
@@ -156,7 +173,7 @@ function deleteitem(id) {
 
     url: deleteitemmenur,
     type: 'POST',
-    success: function(response) {}
+    error: showerror
   });
 }
 
@@ -183,6 +200,7 @@ function deletemenu() {
           alert(response.resp);
         }
       },
+      error: showerror,
       complete: function() {
         $('#spincustomu2').hide();
       }
@@ -205,7 +223,8 @@ function createnewmenu() {
       type: 'POST',
       success: function(response) {
         window.location = menuwr + '?menu=' + response.resp;
-      }
+      },
+      error: showerror
     });
   } else {
     alert('Enter menu name!');
