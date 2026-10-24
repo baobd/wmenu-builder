@@ -11,7 +11,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { php: '8.0', laravel: '^8.0', testbench: '^6.0' }
+          # Laravel 8 needs doctrine/dbal to drop columns on SQLite (migration rollback between tests)
+          - { php: '8.0', laravel: '^8.0', testbench: '^6.0', extra: 'doctrine/dbal:^3.0' }
           - { php: '8.1', laravel: '^9.0', testbench: '^7.0' }
           - { php: '8.1', laravel: '^10.0', testbench: '^8.0' }
           - { php: '8.2', laravel: '^11.0', testbench: '^9.0' }
@@ -34,7 +35,7 @@ jobs:
           # Laravel 8-11 releases all carry security advisories, which Composer refuses to install by
           # default; testing the package against them is still wanted, so allow it in CI only
           php -r '$f = "composer.json"; $c = json_decode(file_get_contents($f), true); $c["config"]["policy"]["advisories"]["block"] = false; $c["config"]["audit"]["block-insecure"] = false; file_put_contents($f, json_encode($c, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));'
-          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
+          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" ${{ matrix.extra }} --no-interaction --no-update
           composer update --prefer-dist --no-interaction --no-progress
 
       - name: Run tests
