@@ -2,8 +2,22 @@
 
 namespace Harimayco\Menu\Models;
 
+use Harimayco\Menu\WMenu;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property string $label
+ * @property string $link
+ * @property int $parent
+ * @property int $sort
+ * @property string|null $class
+ * @property int $menu
+ * @property int $depth
+ * @property int $role_id
+ */
 class MenuItems extends Model
 {
     protected $fillable = ['label', 'link', 'parent', 'sort', 'class', 'menu', 'depth', 'role_id'];
@@ -27,6 +41,17 @@ class MenuItems extends Model
             }
             static::where('parent', $item->id)->update(['parent' => $item->parent]);
         });
+
+        static::saved(function (MenuItems $item) {
+            WMenu::forget($item->menu);
+            if ($item->wasChanged('menu')) {
+                WMenu::forget($item->getOriginal('menu'));
+            }
+        });
+
+        static::deleted(function (MenuItems $item) {
+            WMenu::forget($item->menu);
+        });
     }
 
     public function getTable()
@@ -48,13 +73,20 @@ class MenuItems extends Model
         return self::where('menu', $menu)->max('sort') + 1;
     }
 
+    /**
+     * @return BelongsTo
+     */
     public function parent_menu()
     {
-        return $this->belongsTo('Harimayco\Menu\Models\Menus', 'menu');
+        return $this->belongsTo(Menus::class, 'menu');
     }
 
+    /**
+     * @return HasMany
+     */
     public function child()
     {
-        return $this->hasMany('Harimayco\Menu\Models\MenuItems', 'parent')->orderBy('sort', 'ASC');
+        // loads every level of sub items, not only the first one
+        return $this->hasMany(MenuItems::class, 'parent')->with('child')->orderBy('sort', 'ASC');
     }
 }

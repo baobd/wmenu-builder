@@ -167,9 +167,70 @@ Return: Array
 $menuList = Menu::getByName('Admin');
 ```
 
+### Access control
+
+The builder routes use the `middleware` set in `config/menu.php` (`['web', 'auth']` by default).
+To only let some users edit menus, define a Gate ability and set its name as `gate`:
+
+```php
+// app/Providers/AppServiceProvider.php
+Gate::define('manage-menus', fn ($user) => $user->is_admin);
+```
+
+```php
+// config/menu.php
+'gate' => 'manage-menus',
+```
+
+### Cache
+
+`Menu::get()` and `Menu::getByName()` can cache the menu tree. Enable it in `config/menu.php`:
+
+```php
+'cache' => [
+    'enabled' => true,
+    'store' => null, // default cache store
+    'ttl' => 3600,
+],
+```
+
+The cached tree of a menu is cleared whenever the menu or one of its items is saved or deleted through the models
+(the builder always does). Clear the cache yourself after changing the tables with raw queries.
+
+### JSON endpoints
+
+The builder talks to these routes (prefixed with `route_path`, protected by the configured middleware). They return JSON
+and `422` with the validation errors on invalid input.
+
+| Method | URI | Route name | Body |
+|---|---|---|---|
+| POST | `menus` | `wmenu.menus.store` | `name` |
+| PUT | `menus/{menu}` | `wmenu.menus.update` | `name`, `items[]` (`id`, `parent`, `sort`, and optionally `label`, `link`, `class`, `role_id`) |
+| DELETE | `menus/{menu}` | `wmenu.menus.destroy` | `409` while the menu has items |
+| POST | `menus/{menu}/items` | `wmenu.items.store` | `label`, `link`, `class`, `role_id` |
+| PUT | `menus/{menu}/items/{item}` | `wmenu.items.update` | `label`, `link`, `class`, `role_id` |
+| DELETE | `menus/{menu}/items/{item}` | `wmenu.items.destroy` | sub items move one level up |
+
+Links must be relative (`/about`, `#top`) or use `http`, `https`, `mailto` or `tel`. Item depths are computed from the parents.
+The old `h*` routes (`hcreatenewmenu`, `hgeneratemenucontrol`, ...) still work for builder scripts published before 2.0 but are deprecated.
+
 ### Customization
 
 you can edit the menu interface in **_resources/views/vendor/wmenu/menu-html.blade.php_**
+
+### Development
+
+```bash
+composer install
+composer test
+```
+
+Static analysis (needs Laravel 11+ dependencies):
+
+```bash
+composer require --dev larastan/larastan:^3.0
+vendor/bin/phpstan analyse
+```
 
 ### Credits
 
@@ -187,6 +248,8 @@ you can edit the menu interface in **_resources/views/vendor/wmenu/menu-html.bla
 - The role migration was previously published to `database/` instead of `database/migrations/` (and with an invalid timestamp). If you use roles and never ran it, publish the migrations again and run `php artisan migrate`; you can delete the old `database/2019_01_05_293551_add-role-id-to-menu-items-table.php` file.
 - Menu item links are validated: they must be relative (`/about`, `#top`) or use `http`, `https`, `mailto` or `tel`. Links such as `javascript:` are rejected.
 - Deleting an item moves its sub items one level up (as the builder UI shows) instead of leaving them pointing to a missing parent.
+- The builder scripts use the new `wmenu.*` JSON routes; re-publish the assets (see above). The old routes are deprecated.
+- `$menu->items` now eager loads every level of sub items (`child` is recursive), not only the first one.
 - The controller no longer extends `App\Http\Controllers\Controller`.
 
 ### KNOWN ISSUES

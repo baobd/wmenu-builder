@@ -72,6 +72,37 @@ class WMenu
 
     public static function get($menu_id)
     {
+        if (!config('menu.cache.enabled')) {
+            return self::build($menu_id);
+        }
+
+        return self::cache()->remember(self::cacheKey($menu_id), config('menu.cache.ttl', 3600), function () use ($menu_id) {
+            return self::build($menu_id);
+        });
+    }
+
+    /**
+     * Clears the cached tree of a menu, called when the menu or one of its items changes.
+     */
+    public static function forget($menu_id)
+    {
+        if (config('menu.cache.enabled')) {
+            self::cache()->forget(self::cacheKey($menu_id));
+        }
+    }
+
+    protected static function cache()
+    {
+        return cache()->store(config('menu.cache.store'));
+    }
+
+    protected static function cacheKey($menu_id)
+    {
+        return 'wmenu.menu.' . $menu_id;
+    }
+
+    protected static function build($menu_id)
+    {
         $menuItem = new MenuItems;
         $menu_list = $menuItem->getall($menu_id);
 

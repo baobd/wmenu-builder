@@ -17,7 +17,7 @@ $currentUrl = url()->current();
 								<form method="get" action="{{ $currentUrl }}">
 									<label for="menu" class="selected-menu">Select the menu you want to edit:</label>
 
-									{!! Menu::select('menu', $menulist) !!}
+									{!! \Harimayco\Menu\Facades\Menu::select('menu', $menulist) !!}
 
 									<span class="submit-btn">
 										<input type="submit" class="button-secondary" value="Choose">

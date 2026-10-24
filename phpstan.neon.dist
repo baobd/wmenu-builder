@@ -1,0 +1,10 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 5
+    paths:
+        - src
+    ignoreErrors:
+        # larastan does not resolve views registered with loadViewsFrom() ("wmenu::...")
+        - '#Parameter \#1 \$view of function view expects view-string\|null, string given#'

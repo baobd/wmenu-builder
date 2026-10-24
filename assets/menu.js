@@ -1,43 +1,38 @@
 var arraydata = [];
+
+function wmenuurl(name, menu, item) {
+  return wmenuroutes[name]
+    .replace('__MENU__', encodeURIComponent(menu))
+    .replace('__ITEM__', encodeURIComponent(item));
+}
+
+function itemdepth(li) {
+  var match = /menu-item-depth-(\d+)/.exec(li.className);
+  return match ? parseInt(match[1], 10) : 0;
+}
+
 function getmenus() {
   arraydata = [];
-  $('#spinsavemenu').show();
+  // last item seen at each depth, the parent of an item is the last one seen one level up
+  var lastatdepth = [];
 
-  var cont = 0;
-  $('#menu-to-edit li').each(function(index) {
-    var dept = 0;
-    for (var i = 0; i < $('#menu-to-edit li').length; i++) {
-      var n = $(this)
-        .attr('class')
-        .indexOf('menu-item-depth-' + i);
-      if (n != -1) {
-        dept = i;
-      }
-    }
-    var textoiner = $(this)
-      .find('.item-edit')
-      .text();
-    var id = this.id.split('-');
-    var textoexplotado = textoiner.split('|');
-    var padre = 0;
-    if (
-      !!textoexplotado[textoexplotado.length - 2] &&
-      textoexplotado[textoexplotado.length - 2] != id[2]
-    ) {
-      padre = textoexplotado[textoexplotado.length - 2];
-    }
+  $('#menu-to-edit li.menu-item').each(function(index) {
+    var depth = itemdepth(this);
+    var id = this.id.replace('menu-item-', '');
+    var parent = depth > 0 && lastatdepth[depth - 1] ? lastatdepth[depth - 1] : 0;
+    lastatdepth[depth] = id;
+    lastatdepth.length = depth + 1;
+
     var settings = $(this).find('.menu-item-settings');
     arraydata.push({
-      depth: dept,
-      id: id[2],
-      parent: padre,
-      sort: cont,
+      id: id,
+      parent: parent,
+      sort: index,
       label: settings.find('.edit-menu-item-title').val(),
       link: settings.find('.edit-menu-item-url').val(),
       class: settings.find('.edit-menu-item-classes').val(),
       role_id: settings.find('.edit-menu-item-role').val()
     });
-    cont++;
   });
   // structure and item content are saved together in one request
   actualizarmenu();
@@ -59,14 +54,13 @@ function addcustommenu() {
   $('#spincustomu').show();
 
   $.ajax({
+    dataType: 'json',
     data: {
-      labelmenu: $('#custom-menu-item-name').val(),
-      linkmenu: $('#custom-menu-item-url').val(),
-      rolemenu: $('#custom-menu-item-role').val(),
-      idmenu: $('#idmenu').val()
+      label: $('#custom-menu-item-name').val(),
+      link: $('#custom-menu-item-url').val(),
+      role_id: $('#custom-menu-item-role').val()
     },
-
-    url: addcustommenur,
+    url: wmenuurl('itemsStore', $('#idmenu').val()),
     type: 'POST',
     success: function(response) {
       window.location.reload();
@@ -78,67 +72,24 @@ function addcustommenu() {
   });
 }
 
-function updateitem(id = 0) {
-  if (id) {
-    var label = $('#idlabelmenu_' + id).val();
-    var clases = $('#clases_menu_' + id).val();
-    var url = $('#url_menu_' + id).val();
-    var role_id = 0;
-    if ($('#role_menu_' + id).length) {
-      role_id = $('#role_menu_' + id).val();
-    }
-
-    var data = {
-      label: label,
-      clases: clases,
-      url: url,
-      role_id: role_id,
-      id: id
-    };
-  } else {
-    var arr_data = [];
-    $('.menu-item-settings').each(function(k, v) {
-      var id = $(this)
-        .find('.edit-menu-item-id')
-        .val();
-      var label = $(this)
-        .find('.edit-menu-item-title')
-        .val();
-      var clases = $(this)
-        .find('.edit-menu-item-classes')
-        .val();
-      var url = $(this)
-        .find('.edit-menu-item-url')
-        .val();
-      var role = $(this)
-        .find('.edit-menu-item-role')
-        .val();
-      arr_data.push({
-        id: id,
-        label: label,
-        class: clases,
-        link: url,
-        role_id: role
-      });
-    });
-
-    var data = { arraydata: arr_data, idmenu: $('#idmenu').val() };
-  }
+function updateitem(id) {
   $.ajax({
-    data: data,
-    url: updateitemr,
+    dataType: 'json',
+    data: {
+      _method: 'PUT',
+      label: $('#idlabelmenu_' + id).val(),
+      link: $('#url_menu_' + id).val(),
+      class: $('#clases_menu_' + id).val(),
+      role_id: $('#role_menu_' + id).val()
+    },
+    url: wmenuurl('itemsUpdate', $('#idmenu').val(), id),
     type: 'POST',
     beforeSend: function(xhr) {
-      if (id) {
-        $('#spincustomu2').show();
-      }
+      $('#spincustomu2').show();
     },
-    success: function(response) {},
     error: showerror,
     complete: function() {
-      if (id) {
-        $('#spincustomu2').hide();
-      }
+      $('#spincustomu2').hide();
     }
   });
 }
@@ -147,12 +98,11 @@ function actualizarmenu() {
   $.ajax({
     dataType: 'json',
     data: {
-      arraydata: arraydata,
-      menuname: $('#menu-name').val(),
-      idmenu: $('#idmenu').val()
+      _method: 'PUT',
+      items: arraydata,
+      name: $('#menu-name').val()
     },
-
-    url: generatemenucontrolr,
+    url: wmenuurl('menusUpdate', $('#idmenu').val()),
     type: 'POST',
     beforeSend: function(xhr) {
       $('#spincustomu2').show();
@@ -166,12 +116,10 @@ function actualizarmenu() {
 
 function deleteitem(id) {
   $.ajax({
-    dataType: 'json',
     data: {
-      id: id
+      _method: 'DELETE'
     },
-
-    url: deleteitemmenur,
+    url: wmenuurl('itemsDestroy', $('#idmenu').val(), id),
     type: 'POST',
     error: showerror
   });
@@ -181,24 +129,16 @@ function deletemenu() {
   var r = confirm('Do you want to delete this menu ?');
   if (r == true) {
     $.ajax({
-      dataType: 'json',
-
       data: {
-        id: $('#idmenu').val()
+        _method: 'DELETE'
       },
-
-      url: deletemenugr,
+      url: wmenuurl('menusDestroy', $('#idmenu').val()),
       type: 'POST',
       beforeSend: function(xhr) {
         $('#spincustomu2').show();
       },
-      success: function(response) {
-        if (!response.error) {
-          alert(response.resp);
-          window.location = menuwr;
-        } else {
-          alert(response.resp);
-        }
+      success: function() {
+        window.location = menuwr;
       },
       error: showerror,
       complete: function() {
@@ -214,15 +154,13 @@ function createnewmenu() {
   if (!!$('#menu-name').val()) {
     $.ajax({
       dataType: 'json',
-
       data: {
-        menuname: $('#menu-name').val()
+        name: $('#menu-name').val()
       },
-
-      url: createnewmenur,
+      url: wmenuroutes.menusStore,
       type: 'POST',
       success: function(response) {
-        window.location = menuwr + '?menu=' + response.resp;
+        window.location = menuwr + '?menu=' + response.data.id;
       },
       error: showerror
     });

@@ -2,20 +2,26 @@
 
 namespace Harimayco\Menu\Controllers;
 
-use Closure;
+use Harimayco\Menu\MenuManager;
+use Harimayco\Menu\Models\MenuItems;
+use Harimayco\Menu\Models\Menus;
+use Harimayco\Menu\Rules\SafeLink;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
-use Harimayco\Menu\Models\Menus;
-use Harimayco\Menu\Models\MenuItems;
 
+/**
+ * Endpoints used by the builder scripts published before 2.0.
+ *
+ * @deprecated use MenusController and MenuItemsController (the "wmenu.*" routes)
+ */
 class MenuController extends Controller
 {
-    /**
-     * URL schemes a menu link may use. Links without a scheme (relative paths, #anchors) are always allowed.
-     */
-    protected $allowedSchemes = ['http', 'https', 'mailto', 'tel'];
+    protected $menus;
+
+    public function __construct(MenuManager $menus)
+    {
+        $this->menus = $menus;
+    }
 
     public function createnewmenu(Request $request)
     {
@@ -23,11 +29,7 @@ class MenuController extends Controller
             'menuname' => 'required|string|max:255',
         ]);
 
-        $menu = new Menus();
-        $menu->name = $data['menuname'];
-        $menu->save();
-
-        return response()->json(['resp' => $menu->id]);
+        return response()->json(['resp' => $this->menus->createMenu($data['menuname'])->id]);
     }
 
     public function deleteitemmenu(Request $request)
@@ -36,8 +38,7 @@ class MenuController extends Controller
             'id' => 'required|integer',
         ]);
 
-        $menuitem = MenuItems::findOrFail($request->input('id'));
-        $menuitem->delete();
+        $this->menus->deleteItem(MenuItems::findOrFail($request->input('id')));
 
         return response()->json(['resp' => 1]);
     }
@@ -48,13 +49,9 @@ class MenuController extends Controller
             'id' => 'required|integer',
         ]);
 
-        $menu = Menus::findOrFail($request->input('id'));
-
-        if (MenuItems::where('menu', $menu->id)->exists()) {
+        if (!$this->menus->deleteMenu(Menus::findOrFail($request->input('id')))) {
             return response()->json(['resp' => 'You have to delete all items first', 'error' => 1]);
         }
-
-        $menu->delete();
 
         return response()->json(['resp' => 'you delete this item']);
     }
@@ -67,34 +64,27 @@ class MenuController extends Controller
                 'arraydata' => 'array',
                 'arraydata.*.id' => 'required|integer',
                 'arraydata.*.label' => 'required|string|max:255',
-                'arraydata.*.link' => ['nullable', 'string', 'max:255', $this->linkRule()],
+                'arraydata.*.link' => ['nullable', 'string', 'max:255', new SafeLink()],
                 'arraydata.*.class' => 'nullable|string|max:255',
                 'arraydata.*.role_id' => 'nullable|integer',
             ]);
 
-            $items = $this->itemsOfMenu($data['idmenu'], $data['arraydata']);
-
-            DB::transaction(function () use ($data, $items) {
-                foreach ($data['arraydata'] as $value) {
-                    $this->fillContent($items[$value['id']], $value)->save();
-                }
-            });
+            $this->menus->updateItems(Menus::findOrFail($data['idmenu']), $data['arraydata'], 'arraydata');
         } else {
             $data = $request->validate([
                 'id' => 'required|integer',
                 'label' => 'required|string|max:255',
-                'url' => ['nullable', 'string', 'max:255', $this->linkRule()],
+                'url' => ['nullable', 'string', 'max:255', new SafeLink()],
                 'clases' => 'nullable|string|max:255',
                 'role_id' => 'nullable|integer',
             ]);
 
-            $menuitem = MenuItems::findOrFail($data['id']);
-            $this->fillContent($menuitem, [
+            $this->menus->updateItem(MenuItems::findOrFail($data['id']), [
                 'label' => $data['label'],
                 'link' => $data['url'] ?? null,
                 'class' => $data['clases'] ?? null,
                 'role_id' => $data['role_id'] ?? null,
-            ])->save();
+            ]);
         }
 
         return response()->json(['resp' => 1]);
@@ -105,29 +95,19 @@ class MenuController extends Controller
         $data = $request->validate([
             'idmenu' => 'required|integer',
             'labelmenu' => 'required|string|max:255',
-            'linkmenu' => ['nullable', 'string', 'max:255', $this->linkRule()],
+            'linkmenu' => ['nullable', 'string', 'max:255', new SafeLink()],
             'rolemenu' => 'nullable|integer',
         ]);
 
-        $menu = Menus::findOrFail($data['idmenu']);
+        $item = $this->menus->addItem(Menus::findOrFail($data['idmenu']), [
+            'label' => $data['labelmenu'],
+            'link' => $data['linkmenu'] ?? null,
+            'role_id' => $data['rolemenu'] ?? null,
+        ]);
 
-        $menuitem = new MenuItems();
-        $menuitem->label = $data['labelmenu'];
-        $menuitem->link = $data['linkmenu'] ?? '';
-        if (config('menu.use_roles')) {
-            $menuitem->role_id = $data['rolemenu'] ?? 0;
-        }
-        $menuitem->menu = $menu->id;
-        $menuitem->sort = MenuItems::getNextSortRoot($menu->id);
-        $menuitem->save();
-
-        return response()->json(['resp' => $menuitem->id]);
+        return response()->json(['resp' => $item->id]);
     }
 
-    /**
-     * Saves the menu name, the structure (parent, sort, depth) and, when sent, the content
-     * (label, link, class, role) of every item in a single transaction.
-     */
     public function generatemenucontrol(Request $request)
     {
         $data = $request->validate([
@@ -137,87 +117,15 @@ class MenuController extends Controller
             'arraydata.*.id' => 'required|integer',
             'arraydata.*.parent' => 'required|integer|min:0',
             'arraydata.*.sort' => 'required|integer|min:0',
-            'arraydata.*.depth' => 'required|integer|min:0',
+            'arraydata.*.depth' => 'nullable|integer|min:0',
             'arraydata.*.label' => 'sometimes|required|string|max:255',
-            'arraydata.*.link' => ['sometimes', 'nullable', 'string', 'max:255', $this->linkRule()],
+            'arraydata.*.link' => ['sometimes', 'nullable', 'string', 'max:255', new SafeLink()],
             'arraydata.*.class' => 'sometimes|nullable|string|max:255',
             'arraydata.*.role_id' => 'sometimes|nullable|integer',
         ]);
 
-        $menu = Menus::findOrFail($data['idmenu']);
-        $arraydata = $data['arraydata'] ?? [];
-        $items = $this->itemsOfMenu($menu->id, $arraydata);
-
-        foreach ($arraydata as $index => $value) {
-            if ($value['parent'] != 0 && (!isset($items[$value['parent']]) || $value['parent'] == $value['id'])) {
-                throw ValidationException::withMessages([
-                    "arraydata.$index.parent" => 'The parent must be another item of this menu.',
-                ]);
-            }
-        }
-
-        DB::transaction(function () use ($menu, $data, $arraydata, $items) {
-            $menu->name = $data['menuname'];
-            $menu->save();
-
-            foreach ($arraydata as $value) {
-                $menuitem = $items[$value['id']];
-                $menuitem->parent = $value['parent'];
-                $menuitem->sort = $value['sort'];
-                $menuitem->depth = $value['depth'];
-                if (array_key_exists('label', $value)) {
-                    $this->fillContent($menuitem, $value);
-                }
-                $menuitem->save();
-            }
-        });
+        $this->menus->saveMenu(Menus::findOrFail($data['idmenu']), $data['menuname'], $data['arraydata'] ?? [], 'arraydata');
 
         return response()->json(['resp' => 1]);
-    }
-
-    /**
-     * Loads the items referenced in $arraydata, keyed by id, making sure all of them belong to the menu.
-     */
-    protected function itemsOfMenu($menuId, array $arraydata)
-    {
-        $items = MenuItems::where('menu', $menuId)->get()->keyBy('id');
-
-        foreach ($arraydata as $index => $value) {
-            if (!isset($items[$value['id']])) {
-                throw ValidationException::withMessages([
-                    "arraydata.$index.id" => 'The item does not belong to this menu.',
-                ]);
-            }
-        }
-
-        return $items;
-    }
-
-    protected function fillContent(MenuItems $menuitem, array $value)
-    {
-        $menuitem->label = $value['label'];
-        $menuitem->link = $value['link'] ?? '';
-        $menuitem->class = $value['class'] ?? null;
-        if (config('menu.use_roles')) {
-            $menuitem->role_id = $value['role_id'] ?? 0;
-        }
-
-        return $menuitem;
-    }
-
-    /**
-     * Rejects links such as "javascript:..." or "data:..." that would run code when clicked.
-     */
-    protected function linkRule()
-    {
-        return function ($attribute, $value, Closure $fail) {
-            // browsers ignore whitespace and control characters inside the scheme ("java\tscript:")
-            $normalized = preg_replace('/[\x00-\x20\x7F]+/', '', (string) $value);
-
-            if (preg_match('/^([a-z][a-z0-9+.\-]*):/i', $normalized, $matches)
-                && !in_array(strtolower($matches[1]), $this->allowedSchemes, true)) {
-                $fail('The link must be a relative path or use one of: ' . implode(', ', $this->allowedSchemes) . '.');
-            }
-        };
     }
 }
